@@ -113,5 +113,13 @@
         },
         "jsx": "react-jsx"
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.tsx"]
+    "include": ["resources/js/**/*.ts", "resources/js/**/*.d.ts", "resources/js/**/*.tsx"],
+    "exclude": [
+        "resources/js/routes/filament/**/*",
+        "resources/js/actions/Filament/**/*",
+        "resources/js/actions/Livewire/**/*",
+        "resources/js/routes/livewire/**/*",
+        "resources/js/routes/admin/**/*",
+        "resources/js/routes/password/**/*"
+    ]
 }
