@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DisplayController extends Controller
 {
@@ -51,22 +52,31 @@ class DisplayController extends Controller
         ]);
 
         $service = Service::findOrFail($request->service_id);
-        $today = now()->startOfDay();
-        $last = Ticket::where('service_id', $service->id)
-            ->whereDate('created_at', $today)
-            ->max('number_int');
+        $today = now()->toDateString();
 
-        $num = ($last ?? 0) + 1;
+        $ticket = DB::transaction(function () use ($service, $today) {
+            $last = Ticket::where('service_id', $service->id)
+                ->where('served_date', $today)
+                ->lockForUpdate()
+                ->max('number_int');
 
-        if ($num > 999) {
+            $num = ($last ?? 0) + 1;
+
+            if ($num > 999) {
+                return null;
+            }
+
+            return Ticket::create([
+                'service_id'  => $service->id,
+                'served_date' => $today,
+                'number_int'  => $num,
+                'number_str'  => $service->prefix . '-' . str_pad($num, 3, '0', STR_PAD_LEFT),
+            ]);
+        });
+
+        if (!$ticket) {
             return back()->with('error', 'Kuota tiket hari ini sudah habis.');
         }
-
-        $ticket = Ticket::create([
-            'service_id' => $service->id,
-            'number_int' => $num,
-            'number_str' => $service->prefix . '-' . str_pad($num, 3, '0', STR_PAD_LEFT),
-        ]);
 
         return back()->with('success', 'Tiket berhasil dibuat: ' . $ticket->number_str);
     }

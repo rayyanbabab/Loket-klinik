@@ -12,6 +12,7 @@ class Ticket extends Model
 
     protected $fillable = [
         'service_id',
+        'served_date',
         'number_int',
         'number_str',
         'status',
@@ -19,6 +20,7 @@ class Ticket extends Model
         'called_at',
         'finished_at',
     ];
+
 
     protected $casts = [
         'called_at' => 'datetime',

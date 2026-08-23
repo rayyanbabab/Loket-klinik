@@ -8,18 +8,20 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// Queue management routes - React components
-Route::get('/queue/display', function () {
-    return Inertia::render('queue/display');
-})->name('queue.display');
+// Queue management routes - React components (requires auth)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/queue/display', function () {
+        return Inertia::render('queue/display');
+    })->name('queue.display');
 
-Route::get('/queue/ticket', function () {
-    return Inertia::render('queue/ticket');
-})->name('queue.ticket');
+    Route::get('/queue/ticket', function () {
+        return Inertia::render('queue/ticket');
+    })->name('queue.ticket');
 
-Route::get('/queue/management', function () {
-    return Inertia::render('queue/management');
-})->name('queue.management');
+    Route::get('/queue/management', function () {
+        return Inertia::render('queue/management');
+    })->name('queue.management');
+});
 
 // Legacy routes for backwards compatibility
 Route::get('/display', [DisplayController::class, 'index'])->name('display.index');

@@ -12,6 +12,9 @@ export function NavUser() {
     const { state } = useSidebar();
     const isMobile = useIsMobile();
 
+    // Guard: jangan render jika user belum login
+    if (!auth?.user) return null;
+
     return (
         <SidebarMenu>
             <SidebarMenuItem>

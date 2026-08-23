@@ -1,4 +1,4 @@
-﻿import { Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,17 +25,21 @@ export default function Display() {
       return;
     }
 
-    // Check if any service has a new current ticket
-    data.services?.forEach((service, index) => {
-      const prevService = prevDataRef.current?.services?.[index];
+    // FIX 7: Deteksi perubahan berdasarkan nama layanan, bukan indeks array
+    // Ini mencegah false-positive saat urutan layanan dari API berubah
+    data.services?.forEach((service) => {
+      const prevService = prevDataRef.current?.services?.find(
+        (s: any) => s.service === service.service
+      );
       if (service.current && service.current !== prevService?.current) {
-        // New ticket is being called
+        // Tiket baru sedang dipanggil
         playTicketCall(service.current, service.service, service.counter || 'Counter');
       }
     });
 
     prevDataRef.current = data;
   }, [data, playTicketCall]);
+
 
   if (loading) {
     return (
