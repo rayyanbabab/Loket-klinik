@@ -30,6 +30,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
 // On Vercel, the filesystem is read-only; redirect writable paths to /tmp
 if (isset($_ENV['VERCEL']) || getenv('VERCEL')) {
     $app->useStoragePath('/tmp/storage');
+    $app->useBootstrapPath('/tmp/bootstrap');
 }
 
 return $app;

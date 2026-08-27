@@ -1,8 +1,12 @@
 <?php
 
 // Ensure writable directories exist (use /tmp on Vercel serverless)
-foreach (["/tmp/bootstrap/cache", "/tmp/storage/framework/sessions", "/tmp/storage/framework/views", "/tmp/storage/framework/cache/data", "/tmp/storage/logs"] as $dir) {
+foreach (["/tmp/bootstrap/cache", "/tmp/storage/framework/sessions", "/tmp/storage/framework/views", "/tmp/storage/framework/cache/data", "/tmp/storage/logs", "/tmp/storage/app/public"] as $dir) {
     if (!is_dir($dir)) mkdir($dir, 0755, true);
+}
+
+if (file_exists(__DIR__ . '/../bootstrap/providers.php') && !file_exists('/tmp/bootstrap/providers.php')) {
+    copy(__DIR__ . '/../bootstrap/providers.php', '/tmp/bootstrap/providers.php');
 }
 
 // Serve static files directly if they exist in public/

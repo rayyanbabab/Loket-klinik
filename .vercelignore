@@ -7,4 +7,5 @@ storage/framework/sessions/*
 storage/framework/views/*
 .git
 .github
+bootstrap/cache/*
 .phpunit.cache
