@@ -14,6 +14,7 @@ class QueueController extends Controller
 {
     public function status()
     {
+        $today = now()->toDateString();
         // Ambil last called per service + next 5 waiting (display preview) + total waiting count
         $services = Service::where('is_active', true)->get();
         $payload = [];
@@ -21,11 +22,13 @@ class QueueController extends Controller
         foreach ($services as $service) {
             $current = Ticket::where('service_id', $service->id)
                 ->where('status', 'called')
+                ->where('served_date', $today)
                 ->latest('called_at')
                 ->first();
 
             $next = Ticket::where('service_id', $service->id)
                 ->where('status', 'waiting')
+                ->where('served_date', $today)
                 ->orderBy('number_int')
                 ->take(5)
                 ->get(['number_str']);
@@ -33,6 +36,7 @@ class QueueController extends Controller
             // Total waiting count for accurate display
             $totalWaiting = Ticket::where('service_id', $service->id)
                 ->where('status', 'waiting')
+                ->where('served_date', $today)
                 ->count();
 
             $payload[] = [
@@ -55,13 +59,17 @@ class QueueController extends Controller
 
     public function statusByService(Service $service)
     {
+        $today = now()->toDateString();
+
         $current = Ticket::where('service_id', $service->id)
             ->where('status', 'called')
+            ->where('served_date', $today)
             ->latest('called_at')
             ->first();
 
         $next = Ticket::where('service_id', $service->id)
             ->where('status', 'waiting')
+            ->where('served_date', $today)
             ->orderBy('number_int')
             ->take(5)
             ->get(['number_str']);
@@ -75,18 +83,20 @@ class QueueController extends Controller
     }
 
     /**
-     * FIX 1 + 2: createTicket dengan:
+     * createTicket dengan:
      * - Penomoran harian: reset ke 001 setiap hari (via served_date)
-     * - DB::transaction() + lockForUpdate() untuk mencegah race condition
-     * - Tidak lagi menghapus data historis lama
+     * - Mutex lock pada Service + lockForUpdate() tiket untuk mencegah race condition pada tiket pertama
+     * - Filter outlier durasi pelayanan untuk estimasi waktu tunggu yang akurat
      */
     public function createTicket(Request $request)
     {
-        $service = Service::findOrFail($request->service_id);
-        $today   = now()->toDateString();
+        $serviceId = $request->service_id;
+        $today     = now()->toDateString();
 
-        $ticket = DB::transaction(function () use ($service, $today) {
-            // lockForUpdate() mencegah dua request bersamaan mendapatkan nomor yang sama
+        $ticket = DB::transaction(function () use ($serviceId, $today) {
+            // Lock row service sebagai mutex agar tidak ada race condition saat tiket nomor 1
+            $service = Service::where('id', $serviceId)->lockForUpdate()->firstOrFail();
+
             $last = Ticket::where('service_id', $service->id)
                 ->where('served_date', $today)
                 ->lockForUpdate()
@@ -106,15 +116,15 @@ class QueueController extends Controller
             ]);
         });
 
-        // FIX 6: Estimasi waktu tunggu dengan memperhitungkan jumlah loket aktif
-        $waitingAhead = Ticket::where('service_id', $service->id)
+        // Estimasi waktu tunggu dengan memperhitungkan antrian di depan
+        $waitingAhead = Ticket::where('service_id', $ticket->service_id)
             ->where('status', 'waiting')
             ->where('served_date', $today)
             ->where('number_int', '<', $ticket->number_int)
             ->count();
 
-        // Hitung rata-rata waktu layanan hari ini (dalam menit)
-        $doneTickets = Ticket::where('service_id', $service->id)
+        // Hitung rata-rata waktu layanan hari ini (dalam menit), filter outlier (> 45 menit diabaikan)
+        $doneTickets = Ticket::where('service_id', $ticket->service_id)
             ->where('status', 'done')
             ->where('served_date', $today)
             ->whereNotNull('called_at')
@@ -123,51 +133,63 @@ class QueueController extends Controller
 
         $avgServiceTime = 5; // default 5 menit
         if ($doneTickets->count() > 0) {
-            $totalSeconds = $doneTickets->sum(function ($t) {
-                return $t->called_at->diffInSeconds($t->finished_at);
-            });
-            $avgSeconds    = $totalSeconds / $doneTickets->count();
-            $avgMinutes    = $avgSeconds / 60;
-            // Minimal 1 menit agar estimasi tidak 0
-            $avgServiceTime = max(1, round($avgMinutes, 1));
+            $validDurations = $doneTickets->map(fn($t) => $t->called_at->diffInSeconds($t->finished_at))
+                ->filter(fn($sec) => $sec >= 30 && $sec <= 2700); // 30 detik s/d 45 menit wajar
+
+            if ($validDurations->count() > 0) {
+                $avgMinutes     = ($validDurations->sum() / $validDurations->count()) / 60;
+                $avgServiceTime = max(1, round($avgMinutes, 1));
+            }
         }
 
-        // FIX 6: Bagi dengan jumlah loket aktif agar estimasi lebih akurat
-        $activeCounters = Counter::where('service_id', $service->id)
+        // Loket aktif & loket yang sedang melayani saat ini
+        $activeCounters = Counter::where('service_id', $ticket->service_id)
             ->where('is_active', true)
             ->count();
+        $effectiveCounters = max(1, $activeCounters);
 
-        $effectiveCounters       = max(1, $activeCounters);
-        $estimatedWaitMinutes    = (int) ceil(($waitingAhead / $effectiveCounters) * $avgServiceTime);
-        $estimatedServiceTime    = now()->addMinutes($estimatedWaitMinutes);
+        // Jika loket sedang melayani, tambahkan bobot antrian
+        $busyCounters = Ticket::where('service_id', $ticket->service_id)
+            ->where('status', 'called')
+            ->where('served_date', $today)
+            ->count();
+
+        $effectiveQueueAhead = $waitingAhead;
+        if ($waitingAhead == 0 && $busyCounters > 0) {
+            // Pasien baru tetap menunggu sisa waktu pelayanan pasien saat ini
+            $effectiveQueueAhead = 0.5;
+        }
+
+        $estimatedWaitMinutes = (int) ceil(($effectiveQueueAhead / $effectiveCounters) * $avgServiceTime);
+        $estimatedServiceTime = now()->addMinutes($estimatedWaitMinutes);
 
         return response()->json([
-            'id'                      => $ticket->id,
-            'service_id'              => $ticket->service_id,
-            'number_int'              => $ticket->number_int,
-            'number_str'              => $ticket->number_str,
-            'status'                  => $ticket->status,
-            'created_at'              => $ticket->created_at,
-            'waiting_ahead'           => $waitingAhead,
-            'avg_service_time'        => $avgServiceTime,
-            'estimated_wait_minutes'  => $estimatedWaitMinutes,
-            'estimated_service_time'  => $estimatedServiceTime->format('H:i'),
+            'id'                     => $ticket->id,
+            'service_id'             => $ticket->service_id,
+            'number_int'             => $ticket->number_int,
+            'number_str'             => $ticket->number_str,
+            'status'                 => $ticket->status,
+            'created_at'             => $ticket->created_at,
+            'waiting_ahead'          => $waitingAhead,
+            'avg_service_time'       => $avgServiceTime,
+            'estimated_wait_minutes' => $estimatedWaitMinutes,
+            'estimated_service_time' => $estimatedServiceTime->format('H:i'),
         ]);
     }
 
     /**
-     * FIX 2 + 3 + 5: callNext dengan:
-     * - DB::transaction() + lockForUpdate() → cegah race condition dua loket panggil pasien sama
-     * - Auto-finish tiket 'called' sebelumnya di loket ini → cegah tiket nyangkut selamanya
-     * - Gunakan auth()->id() untuk user_id di log Call
+     * callNext dengan:
+     * - DB::transaction() + lockForUpdate() + filter served_date
+     * - Auto-finish tiket 'called' sebelumnya di loket ini
+     * - Menggunakan auth()->id()
      */
     public function callNext(Request $request)
     {
         $counter = Counter::findOrFail($request->counter_id);
+        $today   = now()->toDateString();
 
-        $ticket = DB::transaction(function () use ($counter) {
-            // FIX 3: Auto-finish tiket yang masih berstatus 'called' di loket ini
-            // agar tidak ada tiket nyangkut dengan status called selamanya
+        $ticket = DB::transaction(function () use ($counter, $today) {
+            // Auto-finish tiket yang masih berstatus 'called' di loket ini
             Ticket::where('counter_id', $counter->id)
                 ->where('status', 'called')
                 ->update([
@@ -175,9 +197,10 @@ class QueueController extends Controller
                     'finished_at' => now(),
                 ]);
 
-            // FIX 2: lockForUpdate() mencegah 2 loket memanggil pasien yang sama secara bersamaan
+            // lockForUpdate() + filter served_date mencegah pemanggilan sisa antrian hari sebelumnya
             $ticket = Ticket::where('service_id', $counter->service_id)
                 ->where('status', 'waiting')
+                ->where('served_date', $today)
                 ->orderBy('number_int')
                 ->lockForUpdate()
                 ->first();
@@ -197,7 +220,6 @@ class QueueController extends Controller
 
         event(new TicketCalled($ticket));
 
-        // FIX 5: Gunakan auth()->id() bukan hardcoded 1
         Call::create([
             'ticket_id'  => $ticket->id,
             'counter_id' => $counter->id,
@@ -209,13 +231,18 @@ class QueueController extends Controller
     }
 
     /**
-     * FIX 5: recall menggunakan auth()->id()
+     * recall dengan perbaruan called_at agar audio display ter-trigger kembali
      */
     public function recall(Ticket $ticket)
     {
         if ($ticket->status !== 'called') {
             abort(422, 'Tiket belum dalam status dipanggil');
         }
+
+        // Perbarui called_at agar timestamp berubah dan sound system di display bisa mendeteksi recall
+        $ticket->update([
+            'called_at' => now(),
+        ]);
 
         event(new TicketCalled($ticket));
 
@@ -255,8 +282,11 @@ class QueueController extends Controller
 
     public function currentTicket(Counter $counter)
     {
+        $today = now()->toDateString();
+
         $ticket = Ticket::where('counter_id', $counter->id)
             ->where('status', 'called')
+            ->where('served_date', $today)
             ->latest('called_at')
             ->first();
 
@@ -278,10 +308,12 @@ class QueueController extends Controller
 
         $currentlyServing = Ticket::where('counter_id', $counter->id)
             ->where('status', 'called')
+            ->where('served_date', $today)
             ->count();
 
         $waiting = Ticket::where('service_id', $counter->service_id)
             ->where('status', 'waiting')
+            ->where('served_date', $today)
             ->count();
 
         return response()->json([
@@ -297,22 +329,22 @@ class QueueController extends Controller
 
         $totalToday       = Ticket::where('served_date', $today)->count();
         $doneToday        = Ticket::where('status', 'done')->where('served_date', $today)->count();
-        $currentlyServing = Ticket::where('status', 'called')->count();
-        $waiting          = Ticket::where('status', 'waiting')->count();
+        $currentlyServing = Ticket::where('status', 'called')->where('served_date', $today)->count();
+        $waiting          = Ticket::where('status', 'waiting')->where('served_date', $today)->count();
 
         $serviceStats = Service::withCount([
             'tickets as total_today' => fn($q) => $q->where('served_date', $today),
             'tickets as done_today'  => fn($q) => $q->where('status', 'done')->where('served_date', $today),
-            'tickets as waiting'     => fn($q) => $q->where('status', 'waiting'),
-            'tickets as serving'     => fn($q) => $q->where('status', 'called'),
+            'tickets as waiting'     => fn($q) => $q->where('status', 'waiting')->where('served_date', $today),
+            'tickets as serving'     => fn($q) => $q->where('status', 'called')->where('served_date', $today),
         ])->where('is_active', true)->get();
 
         $counterStats = Counter::with('service')->withCount([
             'tickets as done_today' => fn($q) => $q->where('status', 'done')->where('served_date', $today),
-            'tickets as serving'    => fn($q) => $q->where('status', 'called'),
+            'tickets as serving'    => fn($q) => $q->where('status', 'called')->where('served_date', $today),
         ])->where('is_active', true)->get();
 
-        // FIX 6: Hitung rata-rata waktu layanan dengan minimum 0 detik
+        // Hitung rata-rata waktu layanan dengan filter outlier wajar (30 detik s/d 45 menit)
         $doneTickets = Ticket::where('status', 'done')
             ->where('served_date', $today)
             ->whereNotNull('called_at')
@@ -321,8 +353,12 @@ class QueueController extends Controller
 
         $avgServiceTime = 0;
         if ($doneTickets->count() > 0) {
-            $totalSeconds   = $doneTickets->sum(fn($t) => $t->called_at->diffInSeconds($t->finished_at));
-            $avgServiceTime = round(($totalSeconds / $doneTickets->count()) / 60, 1);
+            $validDurations = $doneTickets->map(fn($t) => $t->called_at->diffInSeconds($t->finished_at))
+                ->filter(fn($sec) => $sec >= 30 && $sec <= 2700);
+
+            if ($validDurations->count() > 0) {
+                $avgServiceTime = round(($validDurations->sum() / $validDurations->count()) / 60, 1);
+            }
         }
 
         return response()->json([
@@ -341,8 +377,8 @@ class QueueController extends Controller
         $today = now()->toDateString();
 
         $doneToday        = Ticket::where('status', 'done')->where('served_date', $today)->count();
-        $currentlyServing = Ticket::where('status', 'called')->count();
-        $waiting          = Ticket::where('status', 'waiting')->count();
+        $currentlyServing = Ticket::where('status', 'called')->where('served_date', $today)->count();
+        $waiting          = Ticket::where('status', 'waiting')->where('served_date', $today)->count();
 
         return response()->json([
             'done_today'        => $doneToday,

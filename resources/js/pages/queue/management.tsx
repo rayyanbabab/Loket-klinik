@@ -1,4 +1,4 @@
-﻿import { Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,20 +79,14 @@ export default function Management() {
     return counters.find(c => c.id === selectedCounter);
   }, [selectedCounter, counters]);
 
-  const handleCallNext = useCallback(async () => {
-    if (!selectedCounter) return;
-    if (isServingRef.current && servingTicketRef.current) {
-      showNotification('Selesaikan pelayanan saat ini dulu', 'warning');
-      return;
-    }
-
+  const executeCallNext = useCallback(async (counterId: number) => {
     try {
-      const ticket = await callNext(selectedCounter);
+      const ticket = await callNext(counterId);
       if (ticket) {
         setIsServing(true);
         setServingTicket(ticket);
 
-        const counter = counters?.find(c => c.id === selectedCounter);
+        const counter = counters?.find(c => c.id === counterId);
         if (counter && isEnabled) {
           setTimeout(() => {
             playTicketCall(ticket.number_str, counter.service.name, counter.name);
@@ -106,11 +100,22 @@ export default function Management() {
         }, 500);
 
         showNotification(`Memanggil ${ticket.number_str}`, 'success');
+        return ticket;
       }
     } catch {
       showNotification('Gagal memanggil antrian', 'error');
     }
-  }, [selectedCounter, callNext, counters, isEnabled, playTicketCall, refetchCurrentTicket, refetchQueueStatus, refetchStats, showNotification]);
+    return null;
+  }, [callNext, counters, isEnabled, playTicketCall, refetchCurrentTicket, refetchQueueStatus, refetchStats, showNotification]);
+
+  const handleCallNext = useCallback(async () => {
+    if (!selectedCounter) return;
+    if (isServingRef.current && servingTicketRef.current) {
+      showNotification('Selesaikan pelayanan saat ini dulu', 'warning');
+      return;
+    }
+    await executeCallNext(selectedCounter);
+  }, [selectedCounter, executeCallNext, showNotification]);
 
   const handleRecall = useCallback(async () => {
     if (!servingTicket || !selectedCounter) return;
@@ -156,31 +161,30 @@ export default function Management() {
   }, [finish, refetchCurrentTicket, refetchQueueStatus, refetchStats, showNotification]);
 
   const handleFinishAndNext = useCallback(async () => {
-    if (!servingTicketRef.current) return;
+    if (!selectedCounter) return;
+    const currentTicketToFinish = servingTicketRef.current;
+    const currentNumber = currentTicketToFinish?.number_str;
 
-    try {
-      const finishedNumber = servingTicketRef.current.number_str;
-      const ticket = await finish(servingTicketRef.current.id);
+    // Backend callNext secara otomatis menyelesaikan tiket yang berstatus 'called' di loket ini
+    const nextTicket = await executeCallNext(selectedCounter);
 
-      if (ticket !== null) {
+    if (nextTicket) {
+      showNotification(`${currentNumber || 'Pelayanan'} selesai. Memanggil ${nextTicket.number_str}`, 'success');
+    } else {
+      // Jika tidak ada antrian berikutnya yang menunggu, selesaikan tiket saat ini
+      if (currentTicketToFinish) {
+        await finish(currentTicketToFinish.id);
         setIsServing(false);
         setServingTicket(null);
-        showNotification(`${finishedNumber} selesai`, 'success');
-
         await Promise.all([
           refetchCurrentTicket(),
           refetchQueueStatus(),
           refetchStats()
         ]);
-
-        setTimeout(() => {
-          handleCallNext();
-        }, 800);
+        showNotification(`${currentNumber} selesai. Tidak ada antrian menunggu.`, 'info');
       }
-    } catch {
-      showNotification('Gagal menyelesaikan', 'error');
     }
-  }, [finish, refetchCurrentTicket, refetchQueueStatus, refetchStats, showNotification, handleCallNext]);
+  }, [selectedCounter, executeCallNext, finish, refetchCurrentTicket, refetchQueueStatus, refetchStats, showNotification]);
 
   const waitingCount = getWaitingCount();
   const nextTickets = getNextTickets();
@@ -191,45 +195,58 @@ export default function Management() {
       <Head title="Panel Operator" />
 
       <div className="p-6 h-full">
-        {/* Notification */}
+        {/* Notification Toast */}
         {notification && (
-          <Alert variant={notification.type === 'error' ? 'destructive' : 'default'} className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{notification.message}</AlertDescription>
-          </Alert>
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border mb-5 text-sm font-medium ${
+            notification.type === 'error'   ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200' :
+            notification.type === 'success' ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200' :
+            notification.type === 'warning' ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200' :
+                                              'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+          }`}>
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{notification.message}</span>
+          </div>
         )}
 
         {!selectedCounter ? (
-          /* No Counter Selected - Full screen centered */
+          /* No Counter Selected - Premium Landing */
           <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-            <Card className="w-full max-w-md border-dashed">
-              <CardContent className="py-12 text-center">
-                <div className="p-4 bg-primary/10 rounded-full w-fit mx-auto mb-6">
-                  <PhoneCall className="h-12 w-12 text-primary" />
+            <div className="w-full max-w-sm space-y-6 text-center">
+              {/* Icon */}
+              <div className="relative inline-flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-teal-500/20 blur-xl" />
+                <div className="relative p-5 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-xl shadow-teal-500/30">
+                  <PhoneCall className="h-12 w-12 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Panel Operator Antrian</h2>
-                <p className="text-muted-foreground mb-6">Pilih loket Anda untuk mulai melayani</p>
+              </div>
 
-                <Select
-                  value={selectedCounter?.toString() || ''}
-                  onValueChange={(value) => setSelectedCounter(Number(value))}
-                >
-                  <SelectTrigger className="w-full h-12 text-base">
-                    <SelectValue placeholder="Pilih Loket..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {counters?.map((counter) => (
-                      <SelectItem key={counter.id} value={counter.id.toString()} className="py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{counter.name}</span>
-                          <span className="text-muted-foreground">- {counter.service.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+              <div>
+                <h2 className="text-2xl font-black mb-1">Panel Operator</h2>
+                <p className="text-muted-foreground text-sm">Pilih loket Anda untuk mulai melayani pasien</p>
+              </div>
+
+              <div className="text-left space-y-2">
+                {counters?.map((counter) => (
+                  <button
+                    key={counter.id}
+                    type="button"
+                    onClick={() => setSelectedCounter(counter.id)}
+                    className="group w-full flex items-center justify-between p-4 rounded-2xl border-2 border-border bg-card hover:border-teal-500/50 hover:bg-teal-500/5 transition-all duration-200 hover:shadow-md"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-muted group-hover:bg-teal-500/15 transition-colors">
+                        <Headphones className="h-4 w-4 text-muted-foreground group-hover:text-teal-600" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-sm">{counter.name}</div>
+                        <div className="text-xs text-muted-foreground">{counter.service.name}</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-teal-500 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           /* Main Layout - Desktop Optimized Grid */

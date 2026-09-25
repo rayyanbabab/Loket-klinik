@@ -11,17 +11,20 @@ class DisplayController extends Controller
 {
     public function index()
     {
+        $today = now()->toDateString();
         $services = Service::where('is_active', true)->get();
         $queueData = [];
 
         foreach ($services as $service) {
             $current = Ticket::where('service_id', $service->id)
                 ->where('status', 'called')
+                ->where('served_date', $today)
                 ->latest('called_at')
                 ->first();
 
             $waiting = Ticket::where('service_id', $service->id)
                 ->where('status', 'waiting')
+                ->where('served_date', $today)
                 ->orderBy('number_int')
                 ->take(5)
                 ->get();
@@ -32,6 +35,7 @@ class DisplayController extends Controller
                 'waiting' => $waiting,
                 'waiting_count' => Ticket::where('service_id', $service->id)
                     ->where('status', 'waiting')
+                    ->where('served_date', $today)
                     ->count(),
             ];
         }
@@ -51,10 +55,12 @@ class DisplayController extends Controller
             'service_id' => 'required|exists:services,id'
         ]);
 
-        $service = Service::findOrFail($request->service_id);
+        $serviceId = $request->service_id;
         $today = now()->toDateString();
 
-        $ticket = DB::transaction(function () use ($service, $today) {
+        $ticket = DB::transaction(function () use ($serviceId, $today) {
+            $service = Service::where('id', $serviceId)->lockForUpdate()->firstOrFail();
+
             $last = Ticket::where('service_id', $service->id)
                 ->where('served_date', $today)
                 ->lockForUpdate()

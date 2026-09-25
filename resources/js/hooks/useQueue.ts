@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 // Types
 export interface QueueData {
@@ -533,9 +533,6 @@ export function useSoundSystem() {
     updateVolume
   };
 }
-
-// Re-export useMemo for the sound system hook
-import { useMemo } from 'react';
 
 // Custom hook for counter statistics
 export function useCounterStats(counterId: number | null) {

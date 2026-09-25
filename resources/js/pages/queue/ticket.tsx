@@ -1,4 +1,4 @@
-﻿import { Head } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,8 @@ import {
   Calendar,
   Building2,
   Sparkles,
-  Timer
+  Timer,
+  AlertCircle
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -242,9 +243,14 @@ export default function TicketPage() {
       <AppLayout breadcrumbs={breadcrumbs}>
         <Head title="Ambil Tiket" />
         <div className="flex h-screen items-center justify-center">
-          <div className="text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-            <p className="mt-2 text-sm text-muted-foreground">Loading...</p>
+          <div className="text-center space-y-4">
+            <div className="relative mx-auto w-16 h-16">
+              <div className="absolute inset-0 rounded-full bg-teal-500/20 animate-ping" />
+              <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600">
+                <Ticket className="h-7 w-7 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-muted-foreground animate-pulse">Memuat layanan…</p>
           </div>
         </div>
       </AppLayout>
@@ -255,119 +261,123 @@ export default function TicketPage() {
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Ambil Tiket" />
 
-      <div className="min-h-screen p-6">
-        <div className="container mx-auto max-w-6xl">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 p-6">
+        <div className="container mx-auto max-w-4xl">
           {!generatedTicket ? (
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="text-center mb-8 space-y-2">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="bg-primary/10 p-4 rounded-full">
-                    <Ticket className="h-12 w-12 text-primary" />
+            <div className="space-y-8">
+              {/* Hero Header */}
+              <div className="text-center space-y-4 pt-4">
+                <div className="relative inline-flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-teal-500/20 blur-xl" />
+                  <div className="relative p-5 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow-xl shadow-teal-500/30">
+                    <Ticket className="h-12 w-12 text-white" />
                   </div>
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight">Ambil Tiket Antrian</h1>
-                <p className="text-lg text-muted-foreground">
-                  Pilih layanan yang Anda butuhkan dan dapatkan nomor antrian
+                <div>
+                  <h1 className="text-4xl font-black tracking-tight">Ambil Tiket Antrian</h1>
+                  <p className="text-muted-foreground mt-2 text-base">
+                    Pilih layanan dan dapatkan nomor antrian Anda sekarang
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Strip */}
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-500/8 border border-blue-500/20">
+                <Sparkles className="h-5 w-5 text-blue-500 shrink-0" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Sistem antrian digital – pilih layanan dan ambil nomor antrian Anda tanpa perlu mengantri di loket.
                 </p>
               </div>
 
-              {/* Info Alert */}
-              <Alert className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/50">
-                <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <AlertDescription className="text-blue-900 dark:text-blue-100">
-                  Sistem antrian digital memudahkan Anda untuk mendapatkan layanan tanpa menunggu lama.
-                  Pilih layanan di bawah ini dan ambil nomor antrian Anda.
-                </AlertDescription>
-              </Alert>
-
               {/* Service Selection */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
-                  <h2 className="text-xl font-semibold">Pilih Layanan</h2>
+              <div>
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 shadow shadow-teal-500/25">
+                    <Building2 className="h-4 w-4 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold">Pilih Layanan</h2>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {services?.map((service) => {
                     const isSelected = selectedService === service.id;
                     return (
-                      <Card
+                      <button
                         key={service.id}
-                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${isSelected
-                          ? 'border-2 border-primary shadow-lg ring-2 ring-primary/20'
-                          : 'border hover:border-primary/50'
-                          }`}
+                        type="button"
                         onClick={() => setSelectedService(service.id)}
+                        className={`group relative text-left w-full rounded-2xl border-2 p-5 transition-all duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                          isSelected
+                            ? 'border-teal-500 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 shadow-lg shadow-teal-500/15'
+                            : 'border-border bg-card hover:border-teal-400/60 hover:shadow-md'
+                        }`}
                       >
-                        <CardHeader className="pb-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <CardTitle className="flex items-center gap-2 text-lg">
-                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                                  }`}>
-                                  <Users className="h-4 w-4" />
-                                </div>
-                                {service.name}
-                              </CardTitle>
-                              <CardDescription className="mt-1">
-                                Kode: {service.code}
-                              </CardDescription>
-                            </div>
-                            {isSelected && (
-                              <CheckCircle2 className="h-5 w-5 text-primary animate-in fade-in zoom-in" />
-                            )}
+                        {isSelected && (
+                          <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl bg-gradient-to-r from-teal-400 via-emerald-400 to-teal-400" />
+                        )}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className={`p-2.5 rounded-xl transition-all ${
+                            isSelected
+                              ? 'bg-gradient-to-br from-teal-500 to-emerald-600 shadow shadow-teal-500/30'
+                              : 'bg-muted group-hover:bg-teal-500/10'
+                          }`}>
+                            <Users className={`h-5 w-5 ${isSelected ? 'text-white' : 'text-muted-foreground group-hover:text-teal-600'}`} />
                           </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Badge
-                            variant={isSelected ? "default" : "secondary"}
-                            className="w-full justify-center text-sm font-semibold"
-                          >
-                            Antrian: {service.prefix}-XXX
-                          </Badge>
-                        </CardContent>
-                      </Card>
+                          {isSelected && (
+                            <CheckCircle2 className="h-5 w-5 text-teal-500" />
+                          )}
+                        </div>
+                        <div className="font-bold text-base leading-tight mb-1">{service.name}</div>
+                        <div className="text-xs text-muted-foreground mb-3">Kode: {service.code}</div>
+                        <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
+                          isSelected
+                            ? 'bg-teal-500 text-white'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          Antrian: {service.prefix}-XXX
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Action Button */}
-              <Card className="border-2">
-                <CardContent className="pt-6">
-                  <Button
-                    onClick={handleGenerateTicket}
-                    disabled={!selectedService || generating}
-                    size="lg"
-                    className="w-full h-14 text-lg font-semibold"
-                  >
-                    {generating ? (
-                      <>
-                        <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Membuat Tiket...
-                      </>
-                    ) : (
-                      <>
-                        <Ticket className="mr-2 h-6 w-6" />
-                        Ambil Nomor Antrian Sekarang
-                      </>
-                    )}
-                  </Button>
-                  {!selectedService && (
-                    <p className="text-center text-sm text-muted-foreground mt-3">
-                      Silakan pilih layanan terlebih dahulu
-                    </p>
+              {/* Generate Button */}
+              <div className="space-y-3">
+                <Button
+                  onClick={handleGenerateTicket}
+                  disabled={!selectedService || generating}
+                  size="lg"
+                  className={`w-full h-14 text-lg font-bold transition-all ${
+                    selectedService
+                      ? 'bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 shadow-lg shadow-teal-500/30'
+                      : ''
+                  }`}
+                >
+                  {generating ? (
+                    <>
+                      <div className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Membuat Tiket…
+                    </>
+                  ) : (
+                    <>
+                      <Ticket className="mr-2 h-6 w-6" />
+                      Ambil Nomor Antrian Sekarang
+                    </>
                   )}
-                  {error && (
-                    <Alert className="mt-4 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50">
-                      <AlertDescription className="text-red-900 dark:text-red-100">
-                        <strong>Error:</strong> {error}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
+                </Button>
+                {!selectedService && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Silakan pilih layanan terlebih dahulu
+                  </p>
+                )}
+                {error && (
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
+                    <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <>
