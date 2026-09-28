@@ -525,10 +525,15 @@ export function useSoundSystem() {
     setVolume(clampedVolume);
   }, []);
 
+  const testSound = useCallback((ticketNumber: string = 'A-001', serviceName: string = 'Poli Umum', counterName: string = 'Loket 1') => {
+    soundSystem.playTicketCall(ticketNumber, serviceName, counterName);
+  }, [soundSystem]);
+
   return {
     isEnabled,
     volume,
     playTicketCall,
+    testSound,
     toggleSound,
     updateVolume
   };

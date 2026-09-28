@@ -13,11 +13,15 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                 {items.map((item) => {
                     // Check if item has submenu
                     if (item.items && item.items.length > 0) {
+                        const isSubActive = item.items.some((subItem) => {
+                            const href = typeof subItem.href === 'string' ? subItem.href : subItem.href?.url;
+                            return href ? page.url.startsWith(href) : false;
+                        });
                         return (
-                            <Collapsible key={item.title} asChild defaultOpen={false}>
+                            <Collapsible key={item.title} asChild defaultOpen={isSubActive}>
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton tooltip={{ children: item.title }}>
+                                        <SidebarMenuButton tooltip={{ children: item.title }} isActive={isSubActive}>
                                             {item.icon && <item.icon />}
                                             <span>{item.title}</span>
                                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />

@@ -15,20 +15,20 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Antrian',
+        title: 'Antrian Poliklinik',
         href: '/queue/display',
         icon: Ticket,
         items: [
             {
-                title: 'Display Antrian',
+                title: 'Monitor Display TV',
                 href: '/queue/display',
             },
             {
-                title: 'Ambil Tiket',
+                title: 'Kiosk Ambil Tiket',
                 href: '/queue/ticket',
             },
             {
-                title: 'Kelola Antrian',
+                title: 'Panel Operator Loket',
                 href: '/queue/management',
             },
         ],
