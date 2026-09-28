@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem, type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-react';
+import { LayoutGrid, Menu, Monitor, Ticket, Headphones, ExternalLink, Search } from 'lucide-react';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
@@ -22,18 +22,33 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+        title: 'Display TV',
+        href: '/queue/display',
+        icon: Monitor,
+    },
+    {
+        title: 'Kiosk Tiket',
+        href: '/queue/ticket',
+        icon: Ticket,
+    },
+    {
+        title: 'Panel Loket',
+        href: '/queue/management',
+        icon: Headphones,
+    },
 ];
 
 const rightNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        title: 'Display TV',
+        href: '/queue/display',
+        icon: Monitor,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Kiosk Tiket',
+        href: '/queue/ticket',
+        icon: Ticket,
     },
 ];
 
@@ -77,16 +92,14 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
 
                                         <div className="flex flex-col space-y-4">
                                             {rightNavItems.map((item) => (
-                                                <a
+                                                <Link
                                                     key={item.title}
-                                                    href={typeof item.href === 'string' ? item.href : item.href.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    href={item.href}
                                                     className="flex items-center space-x-2 font-medium"
                                                 >
                                                     {item.icon && <Icon iconNode={item.icon} className="h-5 w-5" />}
                                                     <span>{item.title}</span>
-                                                </a>
+                                                </Link>
                                             ))}
                                         </div>
                                     </div>
@@ -134,16 +147,14 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 {rightNavItems.map((item) => (
                                     <TooltipProvider key={item.title} delayDuration={0}>
                                         <Tooltip>
-                                            <TooltipTrigger>
-                                                <a
-                                                    href={typeof item.href === 'string' ? item.href : item.href.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                            <TooltipTrigger asChild>
+                                                <Link
+                                                    href={item.href}
                                                     className="group ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                                                 >
                                                     <span className="sr-only">{item.title}</span>
                                                     {item.icon && <Icon iconNode={item.icon} className="size-5 opacity-80 group-hover:opacity-100" />}
-                                                </a>
+                                                </Link>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p>{item.title}</p>
