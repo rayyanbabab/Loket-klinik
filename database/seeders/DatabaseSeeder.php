@@ -18,18 +18,21 @@ class DatabaseSeeder extends Seeder
         $admin = User::create([
             'name' => 'Admin Puskesmas',
             'email' => 'admin@puskesmas.com',
+            'role' => 'administrator',
             'password' => Hash::make('password'),
         ]);
 
         $operator1 = User::create([
             'name' => 'Operator Poli Umum',
             'email' => 'operator1@puskesmas.com',
+            'role' => 'operator',
             'password' => Hash::make('password'),
         ]);
 
         $operator2 = User::create([
             'name' => 'Operator Poli Gigi',
             'email' => 'operator2@puskesmas.com',
+            'role' => 'operator',
             'password' => Hash::make('password'),
         ]);
 

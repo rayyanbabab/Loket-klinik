@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\QueueController;
+use App\Http\Controllers\UserRoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,3 +28,8 @@ Route::post('/tickets', [QueueController::class, 'createTicket']);
 Route::post('/call/next', [QueueController::class, 'callNext']);
 Route::post('/call/{ticket}/recall', [QueueController::class, 'recall']);
 Route::post('/call/{ticket}/finish', [QueueController::class, 'finish']);
+
+// User and Role management endpoints
+Route::get('/users', [UserRoleController::class, 'index']);
+Route::patch('/users/{user}/role', [UserRoleController::class, 'updateRole']);
+Route::post('/user/switch-role', [UserRoleController::class, 'switchRole']);
