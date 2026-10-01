@@ -3,52 +3,79 @@ import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { LayoutGrid, Monitor, Ticket, ListOrdered, Settings, HelpCircle, Home } from 'lucide-react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { LayoutGrid, Monitor, Ticket, Headphones, Home } from 'lucide-react';
 import AppLogo from './app-logo';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Antrian Poliklinik',
-        href: '/queue/display',
-        icon: Ticket,
-        items: [
-            {
-                title: 'Monitor Display TV',
-                href: '/queue/display',
-            },
-            {
-                title: 'Kiosk Ambil Tiket',
-                href: '/queue/ticket',
-            },
-            {
-                title: 'Panel Operator Loket',
-                href: '/queue/management',
-            },
-        ],
-    },
-];
-
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Beranda',
-        href: '/',
-        icon: Home,
-    },
-    {
-        title: 'Bantuan',
-        href: '#',
-        icon: HelpCircle,
-    },
-];
-
 export function AppSidebar() {
+    const { auth } = usePage<SharedData>().props;
+    const isOperator = auth?.user?.role === 'operator';
+
+    const mainNavItems: NavItem[] = isOperator
+        ? [
+              {
+                  title: 'Meja Operator Loket',
+                  href: '/queue/management',
+                  icon: Headphones,
+              },
+              {
+                  title: 'Dashboard Ringkasan',
+                  href: dashboard(),
+                  icon: LayoutGrid,
+              },
+              {
+                  title: 'Layanan Antrian',
+                  href: '/queue/display',
+                  icon: Ticket,
+                  items: [
+                      {
+                          title: 'Monitor Display TV',
+                          href: '/queue/display',
+                      },
+                      {
+                          title: 'Kiosk Ambil Tiket',
+                          href: '/queue/ticket',
+                      },
+                  ],
+              },
+          ]
+        : [
+              {
+                  title: 'Dashboard Operasional',
+                  href: dashboard(),
+                  icon: LayoutGrid,
+              },
+              {
+                  title: 'Panel Operator Loket',
+                  href: '/queue/management',
+                  icon: Headphones,
+              },
+              {
+                  title: 'Layanan Antrian',
+                  href: '/queue/display',
+                  icon: Ticket,
+                  items: [
+                      {
+                          title: 'Monitor Display TV',
+                          href: '/queue/display',
+                      },
+                      {
+                          title: 'Kiosk Ambil Tiket',
+                          href: '/queue/ticket',
+                      },
+                  ],
+              },
+          ];
+
+    const footerNavItems: NavItem[] = [
+        {
+            title: 'Beranda Publik Klinik',
+            href: '/',
+            icon: Home,
+        },
+    ];
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader className="border-b border-sidebar-border/50">

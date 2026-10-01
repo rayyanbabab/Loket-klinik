@@ -20,8 +20,37 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'role',
         'password',
     ];
+
+    /**
+     * Check if user is administrator
+     */
+    public function isAdmin(): bool
+    {
+        return in_array($this->role, ['administrator', 'admin']);
+    }
+
+    /**
+     * Check if user is operator
+     */
+    public function isOperator(): bool
+    {
+        return $this->role === 'operator';
+    }
+
+    /**
+     * Get human-readable role label
+     */
+    public function getRoleLabelAttribute(): string
+    {
+        return match ($this->role) {
+            'administrator', 'admin' => 'Administrator Sistem',
+            'operator' => 'Operator Loket',
+            default => 'Staf / Pasien',
+        };
+    }
 
     /**
      * The attributes that should be hidden for serialization.
