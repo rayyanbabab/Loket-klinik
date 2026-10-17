@@ -25,10 +25,10 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
       <div className={cn("relative flex w-full items-center", className)}>
         <div className="relative w-full h-6 flex items-center">
           {/* Track */}
-          <div className="absolute inset-0 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="absolute inset-0 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             {/* Progress */}
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-200 ease-out"
+              className="h-full bg-teal-600 rounded-full transition-all duration-200 ease-out"
               style={{ width: `${percentage}%` }}
             />
           </div>
@@ -36,9 +36,9 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
           {/* Thumb */}
           <div 
             className={cn(
-              "absolute w-5 h-5 bg-white border-2 border-blue-500 rounded-full shadow-lg transition-all duration-200 ease-out transform -translate-x-1/2",
-              "hover:scale-110 hover:border-blue-600 hover:shadow-xl",
-              disabled && "opacity-50 cursor-not-allowed hover:scale-100"
+              "absolute w-4 h-4 bg-white border-2 border-teal-600 rounded-full shadow-xs transition-all duration-150 ease-out transform -translate-x-1/2",
+              "hover:scale-105",
+              disabled && "opacity-50 cursor-not-allowed"
             )}
             style={{ left: `${percentage}%` }}
           />

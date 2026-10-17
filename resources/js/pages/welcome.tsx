@@ -241,7 +241,7 @@ export default function Welcome() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-4 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 text-center">
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                   <div className="text-2xl sm:text-3xl font-bold text-sky-700 dark:text-sky-300 font-mono">
                     {liveStats?.waiting ?? 0}

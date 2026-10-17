@@ -1,8 +1,7 @@
-import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
-import { Heart, Sparkles } from 'lucide-react';
+import { Shield, Ticket, Monitor, BarChart3, Building2 } from 'lucide-react';
 
 interface AuthLayoutProps {
     name?: string;
@@ -17,80 +16,94 @@ export default function AuthSimpleLayout({ children, title, description, variant
     return (
         <div className="relative min-h-svh flex">
             {/* Left Side - Form */}
-            <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 bg-white dark:bg-slate-950">
+            <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-12 bg-slate-50 dark:bg-slate-950">
                 <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                    {/* Logo */}
+                    {/* Clinic Logo */}
                     <Link href={home()} className="flex items-center justify-center gap-3 mb-8">
-                        <div className={`w-12 h-12 ${isAdmin ? 'bg-gradient-to-br from-slate-700 to-slate-900' : 'bg-gradient-to-br from-teal-500 to-emerald-600'} rounded-xl flex items-center justify-center shadow-lg ${isAdmin ? 'shadow-slate-500/25' : 'shadow-teal-500/25'}`}>
-                            <Heart className="w-6 h-6 text-white" />
+                        <div className={`w-10 h-10 ${isAdmin ? 'bg-slate-900 text-white' : 'bg-teal-700 text-white'} rounded-xl flex items-center justify-center shadow-xs`}>
+                            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+                                <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
                         </div>
                         <div>
                             <span className="text-xl font-bold text-slate-900 dark:text-white">Poliklinik</span>
-                            <span className={`text-xl font-bold ${isAdmin ? 'text-slate-600 dark:text-slate-400' : 'text-teal-600 dark:text-teal-400'}`}>Queue</span>
+                            <span className={`text-xl font-bold ml-1.5 ${isAdmin ? 'text-slate-600 dark:text-slate-400' : 'text-teal-700 dark:text-teal-400'}`}>Pratama</span>
                         </div>
                     </Link>
 
                     {/* Title & Description */}
-                    <div className="text-center mb-8">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{title}</h1>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{description}</p>
+                    <div className="text-center mb-6">
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">{title}</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">{description}</p>
                     </div>
 
                     {/* Form Content */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 p-8">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8">
                         {children}
                     </div>
 
                     {/* Footer */}
                     <p className="mt-8 text-center text-xs text-slate-500 dark:text-slate-500">
-                        © {new Date().getFullYear()} Sistem Antrian Poliklinik
+                        © {new Date().getFullYear()} Poliklinik Pratama Terpadu • Sistem Antrian
                     </p>
                 </div>
             </div>
 
-            {/* Right Side - Decorative */}
-            <div className={`hidden lg:flex flex-1 items-center justify-center p-12 ${isAdmin ? 'bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-teal-500 via-emerald-500 to-teal-600'} relative overflow-hidden`}>
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
-                </div>
-
-                {/* Decorative Circles */}
-                <div className={`absolute -top-40 -right-40 w-80 h-80 ${isAdmin ? 'bg-slate-700/30' : 'bg-white/10'} rounded-full blur-3xl`} />
-                <div className={`absolute -bottom-40 -left-40 w-80 h-80 ${isAdmin ? 'bg-slate-600/30' : 'bg-white/10'} rounded-full blur-3xl`} />
-
-                {/* Content */}
-                <div className="relative z-10 text-center text-white max-w-md">
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 ${isAdmin ? 'bg-slate-700/50' : 'bg-white/20'} rounded-full backdrop-blur-sm mb-8`}>
-                        <Sparkles className="w-4 h-4" />
-                        <span className="text-sm font-medium">{isAdmin ? 'Panel Administrator' : 'Sistem Antrian Modern'}</span>
+            {/* Right Side - Clean Information Section */}
+            <div className={`hidden lg:flex flex-1 flex-col justify-center items-center p-12 ${isAdmin ? 'bg-slate-900 text-slate-100' : 'bg-teal-900 text-white'} border-l border-slate-800 relative overflow-hidden`}>
+                <div className="relative z-10 max-w-md text-center">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold ${isAdmin ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-teal-800/80 text-teal-200 border border-teal-700'} mb-6`}>
+                        {isAdmin ? <Shield className="w-3.5 h-3.5" /> : <Building2 className="w-3.5 h-3.5" />}
+                        <span>{isAdmin ? 'Portal Akses Administrator' : 'Sistem Antrian Pelayanan'}</span>
                     </div>
 
-                    <h2 className="text-4xl font-bold mb-4">
-                        {isAdmin ? 'Kelola Antrian dengan Mudah' : 'Selamat Datang'}
+                    <h2 className="text-3xl font-bold tracking-tight mb-3">
+                        {isAdmin ? 'Pusat Manajemen Antrian' : 'Pelayanan Rawat Jalan Nyaman'}
                     </h2>
-                    <p className={`text-lg ${isAdmin ? 'text-slate-300' : 'text-teal-100'} leading-relaxed`}>
+                    <p className={`text-sm ${isAdmin ? 'text-slate-400' : 'text-teal-200'} leading-relaxed mb-10`}>
                         {isAdmin
-                            ? 'Akses dashboard admin untuk mengelola layanan, loket, dan sistem antrian poliklinik Anda.'
-                            : 'Sistem antrian digital modern untuk pengalaman pelayanan kesehatan yang lebih baik dan efisien.'
+                            ? 'Akses terpadu untuk monitoring loket, manajemen user, pemanggilan nomor tiket, dan pencatatan operasional.'
+                            : 'Pantau antrian poliklinik secara transparan, hemat waktu tunggu, dan nikmati kemudahan pelayanan kesehatan.'
                         }
                     </p>
 
-                    {/* Feature Icons */}
-                    <div className="mt-12 grid grid-cols-3 gap-6 text-white">
+                    {/* Standardized Vector Feature Cards */}
+                    <div className="grid grid-cols-3 gap-3 text-left">
                         {[
-                            { icon: '🎫', label: 'Tiket Digital' },
-                            { icon: '📺', label: 'Real-time' },
-                            { icon: '📊', label: 'Statistik' },
-                        ].map((item, idx) => (
-                            <div key={idx} className={`p-4 ${isAdmin ? 'bg-slate-800/50' : 'bg-white/10'} rounded-xl backdrop-blur-sm`}>
-                                <div className="text-2xl mb-2">{item.icon}</div>
-                                <div className="text-xs font-medium">{item.label}</div>
-                            </div>
-                        ))}
+                            {
+                                icon: Ticket,
+                                title: 'Tiket Mandiri',
+                                desc: 'Cetak fisik & digital'
+                            },
+                            {
+                                icon: Monitor,
+                                title: 'Display TV',
+                                desc: 'Panggilan realtime'
+                            },
+                            {
+                                icon: BarChart3,
+                                title: 'Rekap Data',
+                                desc: 'Statistik terpusat'
+                            },
+                        ].map((item, idx) => {
+                            const IconComponent = item.icon;
+                            return (
+                                <div
+                                    key={idx}
+                                    className={`p-3.5 rounded-xl border ${isAdmin ? 'bg-slate-800/60 border-slate-700/80' : 'bg-teal-800/40 border-teal-700/60'}`}
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center mb-2.5">
+                                        <IconComponent className="w-4 h-4" strokeWidth={1.75} />
+                                    </div>
+                                    <div className="text-xs font-bold text-white mb-0.5">{item.title}</div>
+                                    <div className={`text-[10px] ${isAdmin ? 'text-slate-400' : 'text-teal-300'}`}>{item.desc}</div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

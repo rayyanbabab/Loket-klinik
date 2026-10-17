@@ -27,17 +27,17 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
             )}
 
-            <Form {...AuthenticatedSessionController.store.form()} resetOnSuccess={['password']} className="flex flex-col gap-5">
+            <Form {...AuthenticatedSessionController.store.form()} resetOnSuccess={['password']} className="flex flex-col gap-4">
                 {({ processing, errors }) => (
                     <>
                         {/* Email Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Alamat Email
                             </Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-slate-400" />
+                                    <Mail className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="email"
@@ -47,28 +47,28 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
-                                    placeholder="nama@contoh.com"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    placeholder="petugas@poliklinik.com"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.email} />
                         </div>
 
                         {/* Password Field */}
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                <Label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     Password
                                 </Label>
                                 {canResetPassword && (
-                                    <TextLink href={request()} className="text-xs text-teal-600 dark:text-teal-400 hover:underline" tabIndex={5}>
+                                    <TextLink href={request()} className="text-xs text-teal-700 dark:text-teal-400 hover:underline" tabIndex={5}>
                                         Lupa password?
                                     </TextLink>
                                 )}
                             </div>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-slate-400" />
+                                    <Lock className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="password"
@@ -78,22 +78,22 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Masukkan password"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.password} />
                         </div>
 
                         {/* Remember Me */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2.5 pt-1">
                             <Checkbox
                                 id="remember"
                                 name="remember"
                                 tabIndex={3}
-                                className="rounded border-slate-300 dark:border-slate-600 text-teal-600 focus:ring-teal-500"
+                                className="rounded border-slate-300 dark:border-slate-600 text-teal-700 focus:ring-teal-600"
                             />
-                            <Label htmlFor="remember" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-                                Ingat saya
+                            <Label htmlFor="remember" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                                Ingat saya di perangkat ini
                             </Label>
                         </div>
 
@@ -102,14 +102,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             type="submit"
                             tabIndex={4}
                             disabled={processing}
-                            className="w-full h-12 mt-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 transition-all"
+                            className="w-full h-11 mt-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-xl shadow-xs transition-colors"
                         >
                             {processing ? (
-                                <LoaderCircle className="h-5 w-5 animate-spin mr-2" />
+                                <LoaderCircle className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                                <LogIn className="h-5 w-5 mr-2" />
+                                <LogIn className="h-4 w-4 mr-2" />
                             )}
-                            Masuk
+                            Masuk ke Sistem
                         </Button>
 
                         {/* Register Link */}

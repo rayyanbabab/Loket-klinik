@@ -38,7 +38,10 @@ import {
   HeartPulse,
   ArrowRight,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Headphones,
+  LogOut,
+  Layers
 } from 'lucide-react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
@@ -302,15 +305,15 @@ export default function Management() {
 
         {!selectedCounter ? (
           /* Selection Screen: No Loket Chosen */
-          <div className="flex items-center justify-center min-h-[calc(100vh-240px)]">
-            <div className="w-full max-w-lg space-y-6 text-center p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="inline-flex items-center justify-center p-4 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 mx-auto">
-                <Headphones className="h-8 w-8" />
-              </div>
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)] py-4">
+            <div className="w-full max-w-4xl space-y-6 p-6 sm:p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="text-center space-y-2 max-w-lg mx-auto">
+                <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                  <Headphones className="h-7 w-7" />
+                </div>
 
-              <div className="space-y-1">
                 <div className="flex items-center justify-center gap-2">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
                     Pilih Meja Loket Bertugas
                   </h2>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-md border ${roleBadge.className}`}>
@@ -318,46 +321,73 @@ export default function Management() {
                     {roleBadge.label}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Petugas: <span className="font-semibold text-slate-800 dark:text-slate-200">{auth?.user?.name || 'Operator'}</span>. Pilih loket poliklinik tempat Anda bertugas hari ini.
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  Petugas: <span className="font-semibold text-slate-800 dark:text-slate-200">{auth?.user?.name || 'Operator'}</span>. Silakan pilih meja loket poliklinik tempat Anda bertugas hari ini.
                 </p>
               </div>
 
-              <div className="space-y-2.5 pt-2">
+              {/* 2-Column Responsive Card Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
                 {counters?.map((counter) => {
                   const Icon = SERVICE_ICONS[counter.service.name] || HeartPulse;
+                  const serviceData = data?.services?.find((s) => s.service === counter.service.name);
+                  const waitingNum = serviceData?.total_waiting ?? 0;
+                  const currentNum = serviceData?.current ?? null;
+
                   return (
                     <button
                       key={counter.id}
                       type="button"
                       onClick={() => setSelectedCounter(counter.id)}
-                      className="w-full flex items-center justify-between p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/60 hover:border-teal-500 hover:bg-teal-50/40 dark:hover:bg-teal-950/20 transition-colors text-left group"
+                      className="flex flex-col justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:border-teal-500 hover:bg-teal-50/30 dark:hover:bg-teal-950/20 hover:shadow-sm transition-all text-left group"
                     >
-                      <div className="flex items-center gap-3.5">
-                        <div className="p-2.5 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 group-hover:bg-teal-600 group-hover:text-white transition-colors">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
-                            {counter.name}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2.5 rounded-lg bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 border border-slate-200 dark:border-slate-700 group-hover:bg-teal-700 group-hover:text-white group-hover:border-teal-700 transition-colors shadow-xs">
+                            <Icon className="h-5 w-5" />
                           </div>
-                          <div className="text-xs text-slate-500 font-medium">
-                            {counter.service.name}
+                          <div>
+                            <div className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
+                              {counter.name}
+                            </div>
+                            <div className="text-xs text-slate-500 font-medium">
+                              {counter.service.name}
+                            </div>
                           </div>
                         </div>
+
+                        {waitingNum > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shrink-0">
+                            {waitingNum} Antri
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0">
+                            Siaga
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-teal-700 dark:text-teal-300">
-                          Buka Loket
+
+                      <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                        <span className="text-slate-500 font-medium">
+                          {currentNum ? (
+                            <span className="text-amber-700 dark:text-amber-400 font-mono font-semibold">
+                              Melayani: {currentNum}
+                            </span>
+                          ) : (
+                            'Belum ada panggilan'
+                          )}
                         </span>
-                        <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all" />
+                        <div className="flex items-center gap-1.5 font-semibold text-teal-700 dark:text-teal-300 group-hover:translate-x-0.5 transition-transform">
+                          <span>Buka Loket</span>
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </div>
                       </div>
                     </button>
                   );
                 })}
 
                 {(!counters || counters.length === 0) && (
-                  <div className="py-6 text-center text-xs text-slate-500">
+                  <div className="col-span-full py-8 text-center text-xs text-slate-500">
                     Tidak ada counter loket aktif yang terdaftar di sistem.
                   </div>
                 )}
@@ -390,7 +420,7 @@ export default function Management() {
               </div>
 
               {/* Sound Controls & Counter Switcher */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                   <Button
                     variant="ghost"
@@ -428,7 +458,7 @@ export default function Management() {
                   value={selectedCounter.toString()}
                   onValueChange={(val) => setSelectedCounter(Number(val))}
                 >
-                  <SelectTrigger className="w-[170px] h-10 rounded-xl text-xs font-semibold border-slate-300 dark:border-slate-700">
+                  <SelectTrigger className="w-[155px] h-9 rounded-xl text-xs font-semibold border-slate-300 dark:border-slate-700">
                     <SelectValue placeholder="Pilih Loket" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
@@ -439,6 +469,17 @@ export default function Management() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedCounter(null)}
+                  className="h-9 px-3 text-xs font-semibold rounded-xl border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-rose-600 hover:border-rose-300"
+                  title="Kembali ke pemilihan meja loket"
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-1" />
+                  Ganti Loket
+                </Button>
               </div>
             </div>
 
@@ -608,7 +649,7 @@ export default function Management() {
               <div className="space-y-6">
 
                 {/* Counter Statistics Mini Cards */}
-                <div className="grid grid-cols-3 lg:grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
                   <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-3">
                     <div className="p-2.5 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded-lg shrink-0">
                       <Clock className="h-4 w-4" />

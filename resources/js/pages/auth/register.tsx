@@ -23,13 +23,13 @@ export default function Register() {
                 {({ processing, errors }) => (
                     <>
                         {/* Name Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="name" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Nama Lengkap
                             </Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <User className="h-5 w-5 text-slate-400" />
+                                    <User className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="name"
@@ -40,20 +40,20 @@ export default function Register() {
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Masukkan nama lengkap"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.name} className="mt-1" />
                         </div>
 
                         {/* Email Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="email" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Alamat Email
                             </Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-slate-400" />
+                                    <Mail className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="email"
@@ -62,21 +62,21 @@ export default function Register() {
                                     tabIndex={2}
                                     autoComplete="email"
                                     name="email"
-                                    placeholder="nama@contoh.com"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    placeholder="nama@poliklinik.com"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.email} />
                         </div>
 
                         {/* Password Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Password
                             </Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-slate-400" />
+                                    <Lock className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="password"
@@ -86,20 +86,20 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Minimal 8 karakter"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.password} />
                         </div>
 
                         {/* Password Confirmation Field */}
-                        <div className="space-y-2">
-                            <Label htmlFor="password_confirmation" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="password_confirmation" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                 Konfirmasi Password
                             </Label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <KeyRound className="h-5 w-5 text-slate-400" />
+                                    <KeyRound className="h-4 w-4 text-slate-400" />
                                 </div>
                                 <Input
                                     id="password_confirmation"
@@ -109,7 +109,7 @@ export default function Register() {
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Ulangi password"
-                                    className="pl-10 h-12 rounded-xl border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                    className="pl-9 h-11 text-sm rounded-xl border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-teal-600"
                                 />
                             </div>
                             <InputError message={errors.password_confirmation} />
@@ -120,25 +120,25 @@ export default function Register() {
                             type="submit"
                             tabIndex={5}
                             disabled={processing}
-                            className="w-full h-12 mt-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 transition-all"
+                            className="w-full h-11 mt-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-xl shadow-xs transition-colors"
                         >
                             {processing ? (
-                                <LoaderCircle className="h-5 w-5 animate-spin mr-2" />
+                                <LoaderCircle className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                                <UserPlus className="h-5 w-5 mr-2" />
+                                <UserPlus className="h-4 w-4 mr-2" />
                             )}
-                            Buat Akun
+                            Daftar Akun Petugas
                         </Button>
 
                         {/* Login Link */}
-                        <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <span className="text-sm text-slate-600 dark:text-slate-400">
-                                Sudah punya akun?{' '}
+                        <div className="text-center pt-3 border-t border-slate-200 dark:border-slate-700">
+                            <span className="text-xs text-slate-500">
+                                Sudah punya akun petugas?{' '}
                             </span>
                             <TextLink
                                 href={login()}
                                 tabIndex={6}
-                                className="text-sm font-semibold text-teal-600 dark:text-teal-400 hover:underline"
+                                className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline"
                             >
                                 Masuk di sini
                             </TextLink>

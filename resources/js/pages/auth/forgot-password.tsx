@@ -51,23 +51,23 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="w-full h-12 mt-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/25 hover:shadow-xl hover:shadow-teal-500/30 transition-all"
+                            className="w-full h-11 mt-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-xl shadow-xs transition-colors"
                         >
                             {processing ? (
-                                <LoaderCircle className="h-5 w-5 animate-spin mr-2" />
+                                <LoaderCircle className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                                <Send className="h-5 w-5 mr-2" />
+                                <Send className="h-4 w-4 mr-2" />
                             )}
                             Kirim Link Reset Password
                         </Button>
 
                         {/* Back to Login */}
-                        <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="text-center pt-3 border-t border-slate-200 dark:border-slate-700">
                             <TextLink
                                 href={login()}
-                                className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300"
                             >
-                                <ArrowLeft className="w-4 h-4" />
+                                <ArrowLeft className="w-3.5 h-3.5" />
                                 Kembali ke halaman login
                             </TextLink>
                         </div>

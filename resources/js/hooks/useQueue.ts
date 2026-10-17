@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // Types
 export interface QueueData {
@@ -75,33 +75,108 @@ export interface GlobalStats {
   waiting: number;
 }
 
-// Custom hook for queue status
-export function useQueueStatus(pollingInterval: number = 10000) {
-  const [data, setData] = useState<QueueStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+// Module-level shared caches for instantaneous zero-latency page transitions
+let memoryCachedStatus: QueueStatus | null = null;
+let memoryCachedServices: Service[] | null = null;
+let memoryCachedCounters: Counter[] | null = null;
+let memoryCachedDashboardStats: DashboardStats | null = null;
+let memoryCachedGlobalStats: GlobalStats | null = null;
+
+const getSessionCache = <T>(key: string): T | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const val = sessionStorage.getItem(key);
+    return val ? JSON.parse(val) : null;
+  } catch {
+    return null;
+  }
+};
+
+const setSessionCache = <T>(key: string, data: T) => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+};
+
+// Custom hook for queue status with instant hydration, deduplication & visibility-aware polling
+export function useQueueStatus(pollingInterval: number = 5000) {
+  const initialCache = useMemo(() => memoryCachedStatus || getSessionCache<QueueStatus>('queue_status_cache'), []);
+  const [data, setData] = useState<QueueStatus | null>(initialCache);
+  const [loading, setLoading] = useState<boolean>(!initialCache);
   const [error, setError] = useState<string | null>(null);
 
+  const prevServicesJsonRef = useRef<string>(initialCache ? JSON.stringify(initialCache.services) : '');
+  const isFetchingRef = useRef<boolean>(false);
+
   const fetchQueueStatus = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch('/api/status', {
+        headers: { Accept: 'application/json' },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch queue status');
       }
-      const result = await response.json();
-      setData(result);
+      const result: QueueStatus = await response.json();
+
+      // Bandingkan apakah data layanan benar-benar berubah untuk mencegah render berlebih
+      const currentServicesJson = JSON.stringify(result.services);
+      if (currentServicesJson !== prevServicesJsonRef.current) {
+        prevServicesJsonRef.current = currentServicesJson;
+        setData(result);
+        memoryCachedStatus = result;
+        setSessionCache('queue_status_cache', result);
+      }
+
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchQueueStatus();
+    let interval: NodeJS.Timeout | null = null;
 
-    const interval = setInterval(fetchQueueStatus, pollingInterval);
-    return () => clearInterval(interval);
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(() => {
+          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            fetchQueueStatus();
+          }
+        }, pollingInterval);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchQueueStatus();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    fetchQueueStatus();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchQueueStatus, pollingInterval]);
 
   return { data, loading, error, refetch: fetchQueueStatus };
@@ -255,20 +330,31 @@ export function useQueueActions() {
   };
 }
 
-// Custom hook for services
+// Custom hook for services with instant memory & session cache
 export function useServices() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialServices = useMemo(() => memoryCachedServices || getSessionCache<Service[]>('services_cache') || [], []);
+  const [services, setServices] = useState<Service[]>(initialServices);
+  const [loading, setLoading] = useState(!initialServices.length);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchServices = async () => {
       try {
-        const response = await fetch('/api/services');
+        const response = await fetch('/api/services', {
+          headers: { Accept: 'application/json' },
+        });
         if (response.ok) {
-          const data = await response.json();
-          setServices(data);
-        } else {
+          const data: Service[] = await response.json();
+          if (isMounted) {
+            setServices(data);
+            memoryCachedServices = data;
+            setSessionCache('services_cache', data);
+            setError(null);
+          }
+        }
+      } catch (err) {
+        if (isMounted && !services.length) {
           // Fallback to mock data if API not available
           const mockServices: Service[] = [
             { id: 1, name: 'Poli Umum', code: 'POLI-UMUM', prefix: 'A' },
@@ -277,44 +363,45 @@ export function useServices() {
             { id: 4, name: 'Poli KIA', code: 'POLI-KIA', prefix: 'D' },
           ];
           setServices(mockServices);
+          setError(null);
         }
-        setError(null);
-      } catch (err) {
-        // Use mock data on error
-        const mockServices: Service[] = [
-          { id: 1, name: 'Poli Umum', code: 'POLI-UMUM', prefix: 'A' },
-          { id: 2, name: 'Poli Gigi', code: 'POLI-GIGI', prefix: 'B' },
-          { id: 3, name: 'Farmasi', code: 'FARMASI', prefix: 'C' },
-          { id: 4, name: 'Poli KIA', code: 'POLI-KIA', prefix: 'D' },
-        ];
-        setServices(mockServices);
-        setError(null);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchServices();
+    return () => { isMounted = false; };
   }, []);
 
   return { services, loading, error };
 }
 
-// Custom hook for counters
+// Custom hook for counters with instant memory & session cache
 export function useCounters() {
-  const [counters, setCounters] = useState<Counter[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialCounters = useMemo(() => memoryCachedCounters || getSessionCache<Counter[]>('counters_cache') || [], []);
+  const [counters, setCounters] = useState<Counter[]>(initialCounters);
+  const [loading, setLoading] = useState(!initialCounters.length);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchCounters = async () => {
       try {
-        const response = await fetch('/api/counters');
+        const response = await fetch('/api/counters', {
+          headers: { Accept: 'application/json' },
+        });
         if (response.ok) {
-          const data = await response.json();
-          setCounters(data);
-        } else {
-          // Fallback to mock data if API not available
+          const data: Counter[] = await response.json();
+          if (isMounted) {
+            setCounters(data);
+            memoryCachedCounters = data;
+            setSessionCache('counters_cache', data);
+            setError(null);
+          }
+        }
+      } catch (err) {
+        if (isMounted && !counters.length) {
           const mockCounters: Counter[] = [
             { id: 1, name: 'Loket 1', service: { id: 1, name: 'Poli Umum' } },
             { id: 2, name: 'Loket Gigi', service: { id: 2, name: 'Poli Gigi' } },
@@ -322,24 +409,15 @@ export function useCounters() {
             { id: 4, name: 'Loket KIA', service: { id: 4, name: 'Poli KIA' } },
           ];
           setCounters(mockCounters);
+          setError(null);
         }
-        setError(null);
-      } catch (err) {
-        // Use mock data on error
-        const mockCounters: Counter[] = [
-          { id: 1, name: 'Loket 1', service: { id: 1, name: 'Poli Umum' } },
-          { id: 2, name: 'Loket Gigi', service: { id: 2, name: 'Poli Gigi' } },
-          { id: 3, name: 'Loket Farmasi', service: { id: 3, name: 'Farmasi' } },
-          { id: 4, name: 'Loket KIA', service: { id: 4, name: 'Poli KIA' } },
-        ];
-        setCounters(mockCounters);
-        setError(null);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchCounters();
+    return () => { isMounted = false; };
   }, []);
 
   return { counters, loading, error };
@@ -350,13 +428,18 @@ export function useCurrentTicket(counterId: number | null) {
   const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchCurrentTicket = useCallback(async (id: number) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/counter/${id}/current`);
+      const response = await fetch(`/api/counter/${id}/current`, {
+        headers: { Accept: 'application/json' },
+      });
 
       if (response.ok) {
         const ticket = await response.json();
@@ -370,6 +453,7 @@ export function useCurrentTicket(counterId: number | null) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setCurrentTicket(null);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
@@ -548,13 +632,18 @@ export function useCounterStats(counterId: number | null) {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchStats = useCallback(async (id: number) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/counter/${id}/stats`);
+      const response = await fetch(`/api/counter/${id}/stats`, {
+        headers: { Accept: 'application/json' },
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -566,23 +655,52 @@ export function useCounterStats(counterId: number | null) {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setStats(null);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (counterId) {
-      fetchStats(counterId);
-
-      // Refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchStats(counterId);
-      }, 30000);
-
-      return () => clearInterval(interval);
-    } else {
+    if (!counterId) {
       setStats(null);
+      return;
     }
+
+    let interval: NodeJS.Timeout | null = null;
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(() => {
+          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            fetchStats(counterId);
+          }
+        }, 15000);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStats(counterId);
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    fetchStats(counterId);
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [counterId, fetchStats]);
 
   return {
@@ -592,19 +710,29 @@ export function useCounterStats(counterId: number | null) {
     refetch: counterId ? () => fetchStats(counterId) : () => { }
   };
 }
-// Custom hook for dashboard statistics
-export function useDashboardStats(pollingInterval: number = 30000) {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+
+// Custom hook for dashboard statistics with instant cache & visibility awareness
+export function useDashboardStats(pollingInterval: number = 10000) {
+  const initialCache = useMemo(() => memoryCachedDashboardStats || getSessionCache<DashboardStats>('dashboard_stats_cache'), []);
+  const [stats, setStats] = useState<DashboardStats | null>(initialCache);
+  const [loading, setLoading] = useState<boolean>(!initialCache);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchStats = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const response = await fetch('/api/dashboard/stats');
+      const response = await fetch('/api/dashboard/stats', {
+        headers: { Accept: 'application/json' },
+      });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: DashboardStats = await response.json();
         setStats(data);
+        memoryCachedDashboardStats = data;
+        setSessionCache('dashboard_stats_cache', data);
         setError(null);
       } else {
         throw new Error('Failed to fetch dashboard stats');
@@ -612,34 +740,75 @@ export function useDashboardStats(pollingInterval: number = 30000) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(() => {
+          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            fetchStats();
+          }
+        }, pollingInterval);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStats();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
     fetchStats();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const interval = setInterval(fetchStats, pollingInterval);
-
-    return () => clearInterval(interval);
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchStats, pollingInterval]);
 
   return { stats, loading, error, refetch: fetchStats };
 }
 
-// Custom hook for global statistics (for display page)
-export function useGlobalStats(pollingInterval: number = 30000) {
-  const [stats, setStats] = useState<GlobalStats | null>(null);
-  const [loading, setLoading] = useState(true);
+// Custom hook for global statistics (for display page) with instant cache & visibility awareness
+export function useGlobalStats(pollingInterval: number = 10000) {
+  const initialCache = useMemo(() => memoryCachedGlobalStats || getSessionCache<GlobalStats>('global_stats_cache'), []);
+  const [stats, setStats] = useState<GlobalStats | null>(initialCache);
+  const [loading, setLoading] = useState<boolean>(!initialCache);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchStats = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
-      const response = await fetch('/api/global/stats');
+      const response = await fetch('/api/global/stats', {
+        headers: { Accept: 'application/json' },
+      });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: GlobalStats = await response.json();
         setStats(data);
+        memoryCachedGlobalStats = data;
+        setSessionCache('global_stats_cache', data);
         setError(null);
       } else {
         throw new Error('Failed to fetch global stats');
@@ -647,16 +816,48 @@ export function useGlobalStats(pollingInterval: number = 30000) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (!interval) {
+        interval = setInterval(() => {
+          if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            fetchStats();
+          }
+        }, pollingInterval);
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStats();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
     fetchStats();
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const interval = setInterval(fetchStats, pollingInterval);
-
-    return () => clearInterval(interval);
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchStats, pollingInterval]);
 
   return { stats, loading, error, refetch: fetchStats };
